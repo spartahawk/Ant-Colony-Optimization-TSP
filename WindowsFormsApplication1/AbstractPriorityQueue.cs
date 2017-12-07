@@ -33,12 +33,16 @@ namespace TSP
             return GetElement(item).Priority;
         }
 
-        protected class Element
+        protected class Element : IComparable<Element>
         {
             public Element(T item, K priority)
             {
                 this.item = item;
                 this.priority = priority;
+            }
+
+            public int CompareTo(Element o) {
+                return priority.CompareTo(o.priority);
             }
 
             private K priority;

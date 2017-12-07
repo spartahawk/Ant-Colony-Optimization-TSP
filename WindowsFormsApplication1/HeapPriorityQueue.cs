@@ -223,7 +223,7 @@ namespace TSP
                 }
             }
 
-            Array.Sort(newElements, (a, b) => a == null ? 1 : b == null ? -1 : (a.Priority.CompareTo(b.Priority)));
+            Array.Sort(newElements, 0, next);
 
             Dictionary<T, int> newIndices = new Dictionary<T, int>((int)(next * 1.1));
             for(int i = 0; i < next; i++) {
