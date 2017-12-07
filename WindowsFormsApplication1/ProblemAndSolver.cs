@@ -541,51 +541,16 @@ namespace TSP
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            bssf = null;
-
-            string[] results = new string[3];
-
+            int count = 0;
+            double bestCost = Double.PositiveInfinity;
             double[,] costs = GetCosts();
 
-            int count = 0;
-            int[] route = new int[Cities.Length];
-
             for(int i = 0; i < Cities.Length; i++) {
-                findGreedyFromCity:
-                route[0] = i;
-
-                HashSet<int> visited = new HashSet<int>();
-                visited.Add(i);
-
-                for(int j = 1; j < Cities.Length; j++) {
-                    int lowest = -1;
-                    int from = route[j-1];
-                    for(int k = 0; k < Cities.Length; k++) {
-                        if(!visited.Contains(k)) {
-                            if(lowest == -1 || costs[from,k] < costs[from,lowest]) {
-                                lowest = k;
-                            }
-                        }
-                    }
-                    if(costs[from,lowest] == Double.PositiveInfinity) {
-                        goto findGreedyFromCity;
-                    }
-                    route[j] = lowest;
-                    visited.Add(lowest);
-                }
-
-                ArrayList cities = new ArrayList();
-                foreach (int city in route)
-                {
-                    cities.Add(Cities[city]);
-                }
-
-                TSPSolution sol = new TSPSolution(new ArrayList(cities));
-                if(bssf == null || sol.costOfRoute() < bssf.costOfRoute()) {
-                    bssf = sol;
-                    count++;
-                }
+                double cost = greedyRecursive(i, i, costs, new ArrayList(), Cities.Length, 0);
+                if(cost < bestCost) { count++; bestCost = cost; }
             }
+
+            string[] results = new string[3];
 
             results[COST] = costOfBssf().ToString();
             results[TIME] = stopwatch.Elapsed.ToString();
@@ -593,6 +558,46 @@ namespace TSP
 
             return results;
         }
+
+        private double greedyRecursive(int startPosition, int currRow, double[,] costs, ArrayList currRoute, int numCities, double routeCost)
+        {
+            double minTo = double.PositiveInfinity;
+            int to = -1;
+            //pick best untravelled to city
+            for (int i = 0; i < numCities; i++)
+            {
+                //save connection if found
+                if (costs[currRow, i] < minTo && !currRoute.Contains(i))
+                {
+                    minTo = costs[currRow, i];
+                    to = i;
+                }
+            }
+ 
+            if (to == -1)
+            {
+                if (costs[currRow, startPosition] < double.PositiveInfinity && currRoute.Count == numCities)
+                {
+                    routeCost += costs[currRow, startPosition];
+
+                    ArrayList cities = new ArrayList();
+                    foreach (int city in currRoute)
+                    {
+                        cities.Add(Cities[city]);
+                    }
+
+                    bssf = new TSPSolution(cities);
+                    return routeCost;
+                }
+                return double.PositiveInfinity;
+            }
+ 
+            currRoute.Add(to);
+            routeCost += minTo;
+            currRow = to;
+            return greedyRecursive(startPosition, currRow, costs, currRoute, numCities, routeCost);
+        }
+
 
         public string[] fancySolveProblem()
         {
