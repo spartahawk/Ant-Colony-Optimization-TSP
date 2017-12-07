@@ -405,7 +405,7 @@ namespace TSP
             string[] results = new string[3];
 
             // Get a default (random) solution
-            defaultSolveProblem();
+            greedySolveProblem();
 
             double[,] costs = GetCosts();
 
