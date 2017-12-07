@@ -4,14 +4,14 @@ using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
 using System.Diagnostics;
-using System.Linq;
-using System.Windows.Forms;
+
 
 namespace TSP
 {
-    partial class ProblemAndSolver
-    {
 
+    class ProblemAndSolver
+    {
+       
         private class TSPSolution
         {
             /// <summary>
@@ -135,7 +135,8 @@ namespace TSP
         #region Public members
 
         /// <summary>
-        /// These three constants are used for convenience/clarity in populating and accessing the results array that is passed back to the calling Form
+        /// These three constants are used for convenience/clarity in populating and accessing the 
+        /// results array that is passed back to the calling Form
         /// </summary>
         public const int COST = 0;           
         public const int TIME = 1;
@@ -321,14 +322,16 @@ namespace TSP
             if (bssf != null)
                 return (bssf.costOfRoute());
             else
-                return Double.PositiveInfinity; 
+                return -1D; 
         }
 
         /// <summary>
         /// This is the entry point for the default solver
         /// which just finds a valid random tour 
         /// </summary>
-        /// <returns>results array for GUI that contains three ints: cost of solution, time spent to find solution, number of solutions found during search (not counting initial BSSF estimate)</returns>
+        /// <returns>results array for GUI that contains three ints: cost of solution, 
+        /// time spent to find solution, number of solutions found during search 
+        /// (not counting initial BSSF estimate)</returns>
         public string[] defaultSolveProblem()
         {
             int i, swap, temp, count=0;
@@ -342,7 +345,7 @@ namespace TSP
 
             do
             {
-                for (i = 0; i < perm.Length; i++)                                 // create a random permutation template
+                for (i = 0; i < perm.Length; i++)  // create a random permutation template
                     perm[i] = i;
                 for (i = 0; i < perm.Length; i++)
                 {
@@ -354,42 +357,20 @@ namespace TSP
                     perm[swap] = temp;
                 }
                 Route.Clear();
-                for (i = 0; i < Cities.Length; i++)                            // Now build the route using the random permutation 
+                for (i = 0; i < Cities.Length; i++) // Now build the route using the random permutation 
                 {
                     Route.Add(Cities[perm[i]]);
                 }
                 bssf = new TSPSolution(Route);
                 count++;
-            } while (costOfBssf() == double.PositiveInfinity);                // until a valid route is found
+            } while (costOfBssf() == double.PositiveInfinity); // until a valid route is found
             timer.Stop();
 
-            results[COST] = costOfBssf().ToString();                          // load results array
+            results[COST] = costOfBssf().ToString();  // load results array
             results[TIME] = timer.Elapsed.ToString();
             results[COUNT] = count.ToString();
 
             return results;
-        }
-
-        // Gets a nice 2d array of costs.
-        private double[,] GetCosts()
-        {
-            double[,] costs = new double[Cities.Length, Cities.Length];
-            for (int i = 0; i < Cities.Length; i++)
-            {
-                for (int j = 0; j < Cities.Length; j++)
-                {
-                    if (i == j)
-                    {
-                        costs[i, j] = Double.PositiveInfinity;
-                    }
-                    else
-                    {
-                        costs[i, j] = Cities[i].costToGetTo(Cities[j]);
-                        costs[j, i] = Cities[j].costToGetTo(Cities[i]);
-                    }
-                }
-            }
-            return costs;
         }
 
         /// <summary>
@@ -399,131 +380,591 @@ namespace TSP
         /// <returns>results array for GUI that contains three ints: cost of solution, time spent to find solution, number of solutions found during search (not counting initial BSSF estimate)</returns>
         public string[] bBSolveProblem()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
 
-            string[] results = new string[3];
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
 
-            // Get a default (random) solution
-            greedySolveProblem();
+            // TODO: Add your implementation for a branch and bound solver here.
+            int childStatesGenerated = 0;
+            int statesPruned = 0;
+            int solutionsFound = 0;
+            
+            findInitialBssf(); // the greedy solution
+            double greedyCost = costOfBssf();
 
-            double[,] costs = GetCosts();
+            BBNode rootNode = makeRootNode();
+            PQueue pq = new PQueue();
 
-            Matrix reduced = new Matrix(Cities, costs, 0).Reduce();
+            pq.makeQueue(Cities.Length);
+            pq.insert(rootNode);
 
-            // Initialize the count of solutions, and the current upper bound
-            // Both of these are passed by reference to ProcessBBNode which can
-            // update them.
-            int count = 0;
-            double upper = bssf.costOfRoute();
+            //Console.WriteLine(rootNode.lowerBound.ToString());
+            //Console.WriteLine(bssf.costOfRoute());
+            //Console.WriteLine("time limit: " + time_limit);
 
-            // Initialize the total number of nodes, those pruned and the highest
-            // queue size. Both are passed to the ProcessBBNode by reference.
-            int totalStates = 0;
-            int pruned = 0;
-            int maxQueueSize = 1;
-
-            IPriorityQueue<BBNode, BBPriority> queue = new HeapPriorityQueue<BBNode, BBPriority>(Cities.Length * 2);
-
-            queue.Insert(new BBNode(new List<int> { 0 }, reduced, 0), new BBPriority(1, reduced.LowerBound));
-
-            while (stopwatch.Elapsed.TotalMilliseconds < time_limit && !queue.IsEmpty())
+            while (timer.Elapsed < TimeSpan.FromSeconds(time_limit / 1000)
+                   && !pq.isEmpty()
+                   && pq.getMinLB() != costOfBssf())
+            //while (!pq.isEmpty() && pq.getMinLB() != costOfBssf())
             {
-                // Get the best candidate node.  This is a combination of depth and cost.
-                Tuple<BBNode,BBPriority> el = queue.GetLowest();
 
-                // If its cost is higher than the current upper bound, we're done!
-                if (el.Item1.Cost > upper)
+                BBNode currentNode = pq.deleteMin();
+                double currentBestCost = costOfBssf(); // for debug
+                if (currentNode.lowerBound >= costOfBssf())
                 {
-                    break;
+                    statesPruned++;
+                    continue; // discarded since it can't beat the bssf, and skip to loop
                 }
 
-                ProcessBBNode(queue, el, ref count, ref upper, ref totalStates, ref pruned, ref maxQueueSize);
+                // if the node pulled off the queue is a leaf/potential solution
+                if (currentNode.path.Count == Cities.Length)
+                {
+                    double costBackToFirstCity = ((City)currentNode.path[currentNode.path.Count - 1])
+                                                  .costToGetTo((City)rootNode.path[0]);
+
+                    if (costBackToFirstCity == double.PositiveInfinity)
+                    {
+                        statesPruned++;
+                        continue; // discarded since it can't complete the cycle back to first city
+                    }
+                    else // cost back to first city is FINITE so completes a loop
+                    {
+                        TSPSolution potentialBssf = new TSPSolution(currentNode.path);
+                        double candidateCost = potentialBssf.costOfRoute(); // debug
+                        double bssfCost = costOfBssf(); // debug
+                        if (potentialBssf.costOfRoute() < costOfBssf())
+                        {
+                            // new best solution found
+                            bssf = potentialBssf;
+                            // increment number of solutions found
+                            solutionsFound++;
+                        }
+                    }
+                    // Done with currentNode. On to the next node on the queue.
+                    continue;
+                }
+
+                for (int childCityIndex = 0; childCityIndex < Cities.Length; childCityIndex++)
+                {
+                    // This ensures that we skip cities already in the path,
+                    if (currentNode.path.Contains(Cities[childCityIndex])) continue;
+
+                    // for this potential child state, if the cost to get to that city (from the last city in the
+                    // current state's path) is infinite, skip making
+                    // it in the first place and just increment statesPruned.
+                    City cityAtEndOfCurrentNodePath = (City) currentNode.path[currentNode.path.Count - 1];
+                    double costToGetToChildCity = cityAtEndOfCurrentNodePath.costToGetTo(Cities[childCityIndex]);
+                    if (costToGetToChildCity == double.PositiveInfinity)
+                    {
+                        // counts as a creation and a pruning
+                        childStatesGenerated++;
+                        statesPruned++;
+                        continue;
+                    }
+                    // Okay we're creating a child (even if the cost to that city is infinity - the lowerbound will be too)
+                    int currentCityIndex = Array.IndexOf(Cities, cityAtEndOfCurrentNodePath);
+                    BBNode childNode = makeChildNode(ref currentNode, currentCityIndex, childCityIndex);
+
+                    // increment childStatesGenerated
+                    childStatesGenerated++;
+
+                    // if the child node lower bound is >= the best solution so far, don't add it to the queue
+                    if (childNode.lowerBound >= costOfBssf())
+                    {
+                        statesPruned++;
+                        continue;
+                    }
+                    // otherwise it's going on the queue
+                    pq.insert(childNode);
+
+                }
+
             }
 
-            pruned += queue.Size;
+            timer.Stop();
 
+            Console.WriteLine("Child states generated: " + childStatesGenerated);
+            Console.WriteLine("Pruned states: " + statesPruned);
+            Console.WriteLine("Largest queue size: " + pq.getMaxNumOfItems());
+
+            string[] results = new string[3];
             results[COST] = costOfBssf().ToString();
-            results[TIME] = stopwatch.Elapsed.ToString();
-            results[COUNT] = count.ToString();
+            results[TIME] = timer.Elapsed.ToString();
+            results[COUNT] = solutionsFound.ToString();
 
             return results;
         }
 
-        // Processes a node in the branch and bound tree
-        // If it is a leaf node and is better than the current best solution,
-        // set the bssf to this node.  If it is not a leaf, add nodes for each
-        // unvisited city which is lower than the current upper bound.
-        private void ProcessBBNode(
-            IPriorityQueue<BBNode, BBPriority> queue,
-            Tuple<BBNode,BBPriority> el,
-            ref int count,
-            ref double upper,
-            ref int totalStates,
-            ref int pruned,
-            ref int maxQueueSize
-            )
+        private void findInitialBssf()
         {
-            BBNode top = el.Item1;
-
-            // Check if the route has passed through every city
-            if (top.Cities.Count == Cities.Length)
+            Route = new ArrayList();
+            for (int startingCityIndex = 0; startingCityIndex < Cities.Length; startingCityIndex++)
             {
-                // Add the trip back to the starting node.
-                double cost = top.Cost + top.Matrix.Costs[top.Cities[top.Cities.Count-1], 0];
-                if (cost < upper)
+                Route.Clear();
+                double smallestCost = double.MaxValue;
+                int smallestCostCityIndex = -1;
+                int fromCityIndex = startingCityIndex;
+                while (Route.Count < Cities.Length)
                 {
-                    upper = cost;
-                    count++;
-
-                    // CLear any nodes with higher cost than the new upper. DEPTH_NONE indicates
-                    // that only cost should be considered, and not depth.  Add the pruned nodes
-                    // to the pruned count.
-                    pruned += queue.DeleteElementsHigherThan(new BBPriority(BBPriority.DEPTH_NONE, upper));
-
-                    ArrayList cities = new ArrayList();
-                    foreach (int city in top.Cities)
+                    for (int c = 0; c < Cities.Length; c++)
                     {
-                        cities.Add(Cities[city]);
+                        // don't allow to self, and don't allow cities already established in Route
+                        if (c == fromCityIndex || Route.Contains(Cities[c]))
+                        {
+                            // skip to the next city (c) since this one is no good
+                            continue;
+                        }
+                        double cCost = Cities[fromCityIndex].costToGetTo(Cities[c]);
+                        if (cCost < smallestCost)
+                        {
+                            smallestCost = cCost;
+                            smallestCostCityIndex = c;
+                        }
                     }
-
-
-                    bssf = new TSPSolution(cities);
+                    if (smallestCost < double.MaxValue)
+                    {
+                        // add the city with the smallest cost to the route and make it the next from-city
+                        Route.Add(Cities[smallestCostCityIndex]);
+                        fromCityIndex = smallestCostCityIndex;
+                        // reset smallestCost to maxValue
+                        smallestCost = double.MaxValue;
+                    }
+                    else
+                    {
+                        // path stops here
+                        Console.WriteLine("No path found from city " + smallestCostCityIndex);
+                        break;
+                    }
+                }
+                if (Route.Count < Cities.Length)
+                {
+                    // no path found. Try the next starting city
+                    continue;
+                }
+                else if ( ((City)Route[Route.Count - 1]).costToGetTo(Cities[startingCityIndex]) == double.PositiveInfinity)
+                {
+                    // no path from last city to starting city, start over again from a different city
+                    continue;
+                }
+                else
+                {
+                    // cycle complete with a legitimate path
+                    Console.WriteLine("Complete cycle found.");
+                    bssf = new TSPSolution(Route);
+                    return;
                 }
             }
-            else
+        }
+
+        private BBNode makeRootNode()
+        {
+            ArrayList initialPath = new ArrayList();
+            initialPath.Add(Cities[0]);
+
+            int length = Cities.Length;
+            double[,] redCostMatrix = new double[length, length];
+
+            for (int orig = 0; orig < length; orig++)
             {
-                // Add nodes to the queue for each potential route out of the current city
-                int lastCity = top.Cities[top.Cities.Count - 1];
-                for (int i = 0; i < top.Matrix.Costs.GetLength(0); i++)
+                for (int dest = 0; dest < length; dest++)
                 {
-                    if (!Double.IsInfinity(top.Matrix.Costs[lastCity, i]))
+                    if (dest == orig)
                     {
-                        Matrix newMatrix = top.Matrix.FollowRoute(lastCity, i);
-                        double newCost = el.Item2.Cost
-                                            + top.Matrix.Costs[lastCity, i]
-                                            + (newMatrix.LowerBound - top.Matrix.LowerBound);
+                        redCostMatrix[orig, dest] = double.PositiveInfinity;
+                    }
+                    else
+                    {
+                        redCostMatrix[orig, dest] = Cities[orig].costToGetTo(Cities[dest]);
+                    }
+                }
+            }
 
-                        totalStates++;
+            double lowerBound = calcLowerBound(ref redCostMatrix);
+            return new BBNode(ref initialPath, ref redCostMatrix, lowerBound);
+        }
 
-                        // If the prospective state is lower cost than the bssf, add it to the queue
-                        if (newCost < upper)
+        private BBNode makeChildNode(ref BBNode parentNode, int parentCityIndex, int thisCityIndex)
+        {
+            ArrayList newPath = new ArrayList();
+            foreach (City city in parentNode.path)
+            {
+                newPath.Add(city);
+            }
+            newPath.Add(Cities[thisCityIndex]);
+
+            int length = Cities.Length;
+            double[,] thisCostMatrix = new double[length, length];
+
+            // copy parent cost matrix to this matrix (it will be missing the newly needed changes)
+            for (int orig = 0; orig < length; orig++)
+            {
+                for (int dest = 0; dest < length; dest++)
+                {
+                    thisCostMatrix[orig, dest] = parentNode.redCostMatrix[orig,dest];
+                }
+            }
+
+            // The function calcLowerBound also updates the matrix to the reduced cost
+            double newLowerBound = calcLowerBound(ref thisCostMatrix, parentCityIndex, thisCityIndex, parentNode.lowerBound);
+            return new BBNode(ref newPath, ref thisCostMatrix, newLowerBound);
+        }
+
+        // implements the IComparable interface so nodes can be sorted in the priorityqueue
+        private class BBNode : IComparable<BBNode>
+        {
+            public ArrayList path;
+            public double[,] redCostMatrix;
+            public double lowerBound;
+            //public double costSoFar;
+
+            public BBNode(ref ArrayList initialPath, ref double[,] redCostMatrix, double lowerBound)
+            {
+                this.path = initialPath;
+                this.redCostMatrix = redCostMatrix;
+                this.lowerBound = lowerBound;
+
+            }
+
+            public int CompareTo(BBNode that)
+            {
+                ////previous sort:
+                //if ((this.lowerBound / this.path.Count) < (that.lowerBound / that.path.Count)) return -1;
+                //if ((this.lowerBound / this.path.Count) > (that.lowerBound / that.path.Count)) return 1;
+                ////equal gives tie to the former
+                //return -1;
+
+                if (this.path.Count > that.path.Count) return -1;
+                if (this.path.Count < that.path.Count) return 1;
+                if (this.path.Count == that.path.Count)
+                {
+                    if (this.lowerBound < that.lowerBound) return -1;
+                    if (this.lowerBound > that.lowerBound) return 1;
+                }
+                return -1;
+
+
+                // TODO: they're the same (unlikely), so it doesn't matter much. But test for this to see if it works.
+                // For now I'm letting equal-to allow priority above.
+                //return 0;
+
+                //throw new NotImplementedException();
+            }
+
+            //public BBNode(double[,] oldRedCostMatrix, int[] parentPath, int fromCity, int toCity,
+            //              double prevLowerBound, int prevCostSoFar)
+            //{
+            //    // this function must also update the value added to the lowerbound somehow
+            //    Tuple<double[,], double> redCostMatrixResult = makeRedCostMatrix(oldRedCostMatrix, fromCity, toCity);
+            //    redCostMatrix = redCostMatrixResult.Item1;
+            //    lowerBound = prevLowerBound + redCostMatrixResult.Item2;
+            //    costSoFar = prevCostSoFar + redCostMatrixResult.Item2;
+
+            //    path = new int[parentPath.Length];
+            //    for (int i = 0; i < parentPath.Length; i++)
+            //    {
+            //        path[i] = parentPath[i];
+            //    }    
+
+            //}
+            //public ArrayList path = new ArrayList();
+            //int[,] redCostMatrix = new int[]
+
+        }
+
+        //private static Tuple<double[,], double> makeRedCostMatrix(double[,] oldRedCostMatrix, int fromCity, int toCity)
+        //{
+        //    //placeholder for now
+        //    int citieslength = 4;
+        //    double[,] newRedCostMatrix = new double[citieslength, citieslength];
+        //    double addedCost = 5;
+
+        //    return new Tuple<double[,], double>(newRedCostMatrix, addedCost);
+        //}
+
+        // This is the first of two similar functions. This one finds the reduced-cost matrix and
+        // the new lower bound for a CHILD NODE/STATE.
+        private double calcLowerBound(ref double[,] costMatrix, int origIndex, int destIndex, double prevLowerbound)
+        {
+            double addedCost = 0;
+            int length = Cities.Length;
+
+            // update the matrix based on the new origin and destination cities.
+            // Infinite cost
+            if (costMatrix[origIndex, destIndex] == double.PositiveInfinity)
+            {
+                return double.PositiveInfinity;
+            }
+
+            // add the added cost found for picking that edge (which will not be equal to costToGetTo)
+            addedCost += costMatrix[origIndex, destIndex];
+
+            // Then fill in infinities
+            // infinities accross that row
+            for (int dest = 0; dest < length; dest++)
+            {
+                costMatrix[origIndex, dest] = double.PositiveInfinity;
+            }
+            // infinities accross that column
+            for (int orig = 0; orig < length; orig++)
+            {
+                costMatrix[orig, destIndex] = double.PositiveInfinity;
+            }
+            // infinity for the reverse direction (since the destination can't return to the origin)
+            costMatrix[destIndex, origIndex] = double.PositiveInfinity;
+            
+            // check rows for zeroes (or all infinities - for which nothing will change)
+            for (int orig = 0; orig < length; orig++)
+            {
+                double min = double.MaxValue;
+                for (int dest = 0; dest < length; dest++)
+                {
+                    if (costMatrix[orig, dest] == 0)
+                    {
+                        // zero found so we're done for this row
+                        break;
+                    }
+                    if (costMatrix[orig, dest] < min)
+                    {
+                        min = costMatrix[orig, dest];
+                        // There were no zeroes, so before loop completes, subtract min from all.
+                        // Any infinities (including if they're all infinities) will remain infinity.
+                        if (dest == length - 1)
                         {
-                            List<int> newCities = top.Cities.Concat(new List<int> { i }).ToList();
-                            queue.Insert(
-                                new BBNode(newCities, newMatrix, newCost),
-                                new BBPriority(newCities.Count, newCost)
-                            );
-                        } else
-                        {
-                            pruned++;
+                            for (int j = 0; j < length; j++)
+                            {
+                                costMatrix[orig, j] -= min;
+                            }
+                            addedCost += min;
                         }
                     }
                 }
-
-                if(queue.Size > maxQueueSize)
+            }
+            // Check columns for zeroes
+            for (int dest = 0; dest < length; dest++)
+            {
+                double min = double.MaxValue;
+                for (int orig = 0; orig < length; orig++)
                 {
-                    maxQueueSize = queue.Size;
+                    if (costMatrix[orig, dest] == 0)
+                    {
+                        // zero found so we're done for this column
+                        break;
+                    }
+                    if (costMatrix[orig, dest] < min)
+                    {
+                        min = costMatrix[orig, dest];
+                        // There were no zeroes, so before loop completes, subtract min from all.
+                        // Any infinities (including if they're all infinities) will remain infinity.
+                        if (orig == length - 1)
+                        {
+                            for (int i = 0; i < length; i++)
+                            {
+                                costMatrix[i, dest] -= min;
+                            }
+                            addedCost += min;
+                        }
+                    }
+                }
+            }
+            return prevLowerbound + addedCost;
+        }
+
+        // An overloaded function for the initial node cost matrix: this one is for just the ROOT node/state
+        private double calcLowerBound(ref double[,] costMatrix)
+        {
+            double addedCost = 0;
+
+            int length = Cities.Length;
+            // check rows for zeroes
+            for (int orig = 0; orig < length; orig++)
+            {
+                double min = double.MaxValue;
+                for (int dest = 0; dest < length; dest++)
+                {
+                    if (costMatrix[orig, dest] == 0)
+                    {
+                        // zero found so we're done for this row
+                        break;
+                    }
+                    if (costMatrix[orig, dest] < min)
+                    {
+                        min = costMatrix[orig, dest];
+                    }
+                    // there were no zeroes, so before loop completes, subtract min from all
+                    if (dest == length - 1)
+                    {
+                        for (int j = 0; j < length; j++)
+                        {
+                            costMatrix[orig, j] -= min;
+                        }
+                        addedCost += min;
+                    }
+                }
+            }
+            // Check columns for zeroes
+            for (int dest = 0; dest < length; dest++)
+            {
+                double min = double.MaxValue;
+                for (int orig = 0; orig < length; orig++)
+                {
+                    if (costMatrix[orig, dest] == 0)
+                    {
+                        // zero found so we're done for this column
+                        break;
+                    }
+                    if (costMatrix[orig, dest] < min)
+                    {
+                        min = costMatrix[orig, dest];
+                    }
+                    // there were no zeroes, so before loop completes, subtract min from all
+                    if (orig == length - 1)
+                    {
+                        for (int i = 0; i < length; i++)
+                        {
+                            costMatrix[i, dest] -= min;
+                        }
+                        addedCost += min;
+                    }
+                }
+            }
+            return addedCost;
+        }
+
+        private class PQueue
+        {
+            private int capacity;
+            private int count;
+            private int maxNum;
+            private BBNode[] queuedNodes;
+
+            public PQueue() { }
+
+            /**
+            * This function returns whether the queue is empty or not.
+            * Time and Space = O(1) as it only involves an int comparison
+            */
+            public bool isEmpty()
+            {
+                return count == 0;
+            }
+
+            public double getMinLB()
+            {
+                return queuedNodes[1].lowerBound;
+            }
+
+            /**
+            * This function returns the number of items in the queue
+            */
+            public int getSize()
+            {
+                return count;
+            }
+
+            /**
+            * This method creates an array to implement the queue. Time and Space Complexities are both O(|V|) where |V| is
+            * the number of nodes. This is because you create an array of the same size and specify the value for each item by 
+            * iterating over the entire array.
+            */
+            public void makeQueue(int numOfNodes)
+            {
+                //Starting the array on the small side and will grow it as needed
+                int arrayStartingSize = 128;
+
+                queuedNodes = new BBNode[1000000];
+                capacity = numOfNodes;
+                count = 0;
+                maxNum = 0;
+            }
+
+            /**
+            * This method returns the index of the element with the minimum value and removes it from the queue. 
+            * Time Complexity: O(log(|V|)) because removing a node is constant time as we have its position in
+            * the queue, then to readjust the heap we just bubble up the min value which takes as long as 
+            * the depth of the tree which is log(|V|), where |V| is the number of nodes
+            * Space Complexity: O(1) because we don't create any extra variables that vary with the size of the input.
+            */
+            public BBNode deleteMin()
+            {
+                // grab the node with min value which will be at the root
+                BBNode minValue = queuedNodes[1];
+                //queuedNodes[1].setPriority(double.MaxValue);
+                queuedNodes[1] = queuedNodes[count];
+                count--;
+                // fix the heap
+                int indexIterator = 1;
+                while (indexIterator <= count)
+                {
+                    // grab left child
+                    int smallerElementIndex = 2 * indexIterator;
+
+                    // if child does not exist, break
+                    if (smallerElementIndex > count)
+                        break;
+
+                    // if right child exists and is of smaller value, pick it
+                    if (smallerElementIndex + 1 <= count
+                        && queuedNodes[smallerElementIndex + 1].CompareTo(queuedNodes[smallerElementIndex]) < 0)
+                    {
+                        smallerElementIndex++;
+                    }
+
+                    if (queuedNodes[indexIterator].CompareTo(queuedNodes[smallerElementIndex]) > 0)
+                    {
+                        // set the node's value to that of its smaller child
+                        BBNode temp = queuedNodes[smallerElementIndex];
+                        queuedNodes[smallerElementIndex] = queuedNodes[indexIterator];
+                        queuedNodes[indexIterator] = temp;
+                    }
+
+                    indexIterator = smallerElementIndex;
+                }
+                // return the min value
+                return minValue;
+            }
+
+            /**
+            * This function returns the maximum number of items ever put in the queue
+            */
+            public int getMaxNumOfItems()
+            {
+                return maxNum;
+            }
+            /**
+            * This method updates the nodes in the queue after inserting a new node
+            * Time Complexity: O(log(|V|)) as reording the heap works by bubbling up the min value to the top
+            * which takes as long as the depth of the tree which is log|V|.
+            * Space Complexity: O(1) as it does not create any extra variables that vary with the size of the input.
+            */
+            public void insert(BBNode newBBNode)
+            {
+                // update the count and if necessary increase the size of the array
+                count++;
+
+                //if (count == queuedNodes.Length - 1)
+                //{
+                //    BBNode[] tempArray = new BBNode[count * 2];
+                //    for (int i = 1; i < count; i++)
+                //    {
+                //        tempArray[i] = queuedNodes[i];
+                //    }
+                //    queuedNodes = tempArray;
+                //    Console.WriteLine("new array of size" + count * 2);
+                //}
+
+                queuedNodes[count] = newBBNode;
+                if (count > maxNum) maxNum = count;
+
+                // as long as its parent has a larger value and have not hit the root
+                int indexIterator = count;
+                while (indexIterator > 1 && queuedNodes[indexIterator / 2].CompareTo(queuedNodes[indexIterator]) > 0)
+                {
+                    // swap the two nodes
+                    BBNode temp = queuedNodes[indexIterator / 2];
+                    queuedNodes[indexIterator / 2] = queuedNodes[indexIterator];
+                    queuedNodes[indexIterator] = temp;
+
+                    indexIterator /= 2;
                 }
             }
         }
@@ -538,58 +979,13 @@ namespace TSP
         /// <returns>results array for GUI that contains three ints: cost of solution, time spent to find solution, number of solutions found during search (not counting initial BSSF estimate)</returns>
         public string[] greedySolveProblem()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            bssf = null;
-
             string[] results = new string[3];
 
-            double[,] costs = GetCosts();
+            // TODO: Add your implementation for a greedy solver here.
 
-            int count = 0;
-            int[] route = new int[Cities.Length];
-
-            for(int i = 0; i < Cities.Length; i++) {
-                findGreedyFromCity:
-                route[0] = i;
-
-                HashSet<int> visited = new HashSet<int>();
-                visited.Add(i);
-
-                for(int j = 1; j < Cities.Length; j++) {
-                    int lowest = -1;
-                    int from = route[j-1];
-                    for(int k = 0; k < Cities.Length; k++) {
-                        if(!visited.Contains(k)) {
-                            if(lowest == -1 || costs[from,k] < costs[from,lowest]) {
-                                lowest = k;
-                            }
-                        }
-                    }
-                    if(costs[from,lowest] == Double.PositiveInfinity) {
-                        goto findGreedyFromCity;
-                    }
-                    route[j] = lowest;
-                    visited.Add(lowest);
-                }
-
-                ArrayList cities = new ArrayList();
-                foreach (int city in route)
-                {
-                    cities.Add(Cities[city]);
-                }
-
-                TSPSolution sol = new TSPSolution(new ArrayList(cities));
-                if(bssf == null || sol.costOfRoute() < bssf.costOfRoute()) {
-                    bssf = sol;
-                    count++;
-                }
-            }
-
-            results[COST] = costOfBssf().ToString();
-            results[TIME] = stopwatch.Elapsed.ToString();
-            results[COUNT] = count.ToString();
+            results[COST] = "not implemented";    // load results into array here, replacing these dummy values
+            results[TIME] = "-1";
+            results[COUNT] = "-1";
 
             return results;
         }
