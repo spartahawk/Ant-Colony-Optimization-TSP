@@ -541,55 +541,69 @@ namespace TSP
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            bssf = null;
-
-            string[] results = new string[3];
-
-            double[,] costs = GetCosts();
-
-            int count = 0;
-            int[] route = new int[Cities.Length];
-
-            for(int i = 0; i < Cities.Length; i++) {
-                findGreedyFromCity:
-                route[0] = i;
-
-                HashSet<int> visited = new HashSet<int>();
-                visited.Add(i);
-
-                for(int j = 1; j < Cities.Length; j++) {
-                    int lowest = -1;
-                    int from = route[j-1];
-                    for(int k = 0; k < Cities.Length; k++) {
-                        if(!visited.Contains(k)) {
-                            if(lowest == -1 || costs[from,k] < costs[from,lowest]) {
-                                lowest = k;
-                            }
+            Route = new ArrayList();
+            for (int startingCityIndex = 0; startingCityIndex < Cities.Length; startingCityIndex++)
+            {
+                Route.Clear();
+                double smallestCost = double.MaxValue;
+                int smallestCostCityIndex = -1;
+                int fromCityIndex = startingCityIndex;
+                while (Route.Count < Cities.Length)
+                {
+                    for (int c = 0; c < Cities.Length; c++)
+                    {
+                        // don't allow to self, and don't allow cities already established in Route
+                        if (c == fromCityIndex || Route.Contains(Cities[c]))
+                        {
+                            // skip to the next city (c) since this one is no good
+                            continue;
+                        }
+                        double cCost = Cities[fromCityIndex].costToGetTo(Cities[c]);
+                        if (cCost < smallestCost)
+                        {
+                            smallestCost = cCost;
+                            smallestCostCityIndex = c;
                         }
                     }
-                    if(costs[from,lowest] == Double.PositiveInfinity) {
-                        goto findGreedyFromCity;
+                    if (smallestCost < double.MaxValue)
+                    {
+                        // add the city with the smallest cost to the route and make it the next from-city
+                        Route.Add(Cities[smallestCostCityIndex]);
+                        fromCityIndex = smallestCostCityIndex;
+                        // reset smallestCost to maxValue
+                        smallestCost = double.MaxValue;
                     }
-                    route[j] = lowest;
-                    visited.Add(lowest);
+                    else
+                    {
+                        // path stops here
+                        Console.WriteLine("No path found from city " + smallestCostCityIndex);
+                        break;
+                    }
                 }
-
-                ArrayList cities = new ArrayList();
-                foreach (int city in route)
+                if (Route.Count < Cities.Length)
                 {
-                    cities.Add(Cities[city]);
+                    // no path found. Try the next starting city
+                    continue;
                 }
-
-                TSPSolution sol = new TSPSolution(new ArrayList(cities));
-                if(bssf == null || sol.costOfRoute() < bssf.costOfRoute()) {
-                    bssf = sol;
-                    count++;
+                else if ( ((City)Route[Route.Count - 1]).costToGetTo(Cities[startingCityIndex]) == double.PositiveInfinity)
+                {
+                    // no path from last city to starting city, start over again from a different city
+                    continue;
+                }
+                else
+                {
+                    // cycle complete with a legitimate path
+                    Console.WriteLine("Complete cycle found.");
+                    bssf = new TSPSolution(Route);
+                    break;
                 }
             }
 
+            string[] results = new string[3];
+        
             results[COST] = costOfBssf().ToString();
             results[TIME] = stopwatch.Elapsed.ToString();
-            results[COUNT] = count.ToString();
+            results[COUNT] = "1";
 
             return results;
         }
