@@ -538,13 +538,58 @@ namespace TSP
         /// <returns>results array for GUI that contains three ints: cost of solution, time spent to find solution, number of solutions found during search (not counting initial BSSF estimate)</returns>
         public string[] greedySolveProblem()
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            bssf = null;
+
             string[] results = new string[3];
 
-            // TODO: Add your implementation for a greedy solver here.
+            double[,] costs = GetCosts();
 
-            results[COST] = "not implemented";    // load results into array here, replacing these dummy values
-            results[TIME] = "-1";
-            results[COUNT] = "-1";
+            int count = 0;
+            int[] route = new int[Cities.Length];
+
+            for(int i = 0; i < Cities.Length; i++) {
+                findGreedyFromCity:
+                route[0] = i;
+
+                HashSet<int> visited = new HashSet<int>();
+                visited.Add(i);
+
+                for(int j = 1; j < Cities.Length; j++) {
+                    int lowest = -1;
+                    int from = route[j-1];
+                    for(int k = 0; k < Cities.Length; k++) {
+                        if(!visited.Contains(k)) {
+                            if(lowest == -1 || costs[from,k] < costs[from,lowest]) {
+                                lowest = k;
+                            }
+                        }
+                    }
+                    if(costs[from,lowest] == Double.PositiveInfinity) {
+                        goto findGreedyFromCity;
+                    }
+                    route[j] = lowest;
+                    visited.Add(lowest);
+                }
+
+                ArrayList cities = new ArrayList();
+                foreach (int city in route)
+                {
+                    cities.Add(Cities[city]);
+                }
+
+                TSPSolution sol = new TSPSolution(new ArrayList(cities));
+                if(bssf == null || sol.costOfRoute() < bssf.costOfRoute()) {
+                    bssf = sol;
+                    count++;
+                }
+            }
+
+            results[COST] = costOfBssf().ToString();
+            results[TIME] = stopwatch.Elapsed.ToString();
+            results[COUNT] = count.ToString();
 
             return results;
         }
