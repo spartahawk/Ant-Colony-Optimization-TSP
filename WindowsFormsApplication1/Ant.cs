@@ -119,10 +119,13 @@ namespace TSP
                     // TODO figure out if there is a more efficient way of doing this.
                     for (; next < path.Length; next++)
                     {
-                        desirabilitySum += GetPathDesirability(path[index], next, visited);
-                        if (desirabilitySum > choice)
+                        if (!wontWork.Contains(next))
                         {
-                            break;
+                            desirabilitySum += GetPathDesirability(path[index], next, visited);
+                            if (desirabilitySum > choice)
+                            {
+                                break;
+                            }
                         }
                     }
                 }
