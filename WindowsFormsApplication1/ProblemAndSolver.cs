@@ -596,15 +596,28 @@ namespace TSP
 
         public string[] fancySolveProblem()
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
 
+            // TODO pass a random number as the second parameter!
             Ant ant = new Ant(GetCosts(), 0);
-            ant.FindRoute();
+            int[] route = ant.FindRoute();
+
+            ArrayList cities = new ArrayList();
+            foreach (int city in route)
+            {
+                cities.Add(Cities[city]);
+            }
+            bssf = new TSPSolution(new ArrayList(cities));
+
 
             string[] results = new string[3];
 
-            results[COST] = "not implemented";    // load results into array here, replacing these dummy values
-            results[TIME] = "-1";
-            results[COUNT] = "-1";
+            double[,] costs = GetCosts();
+
+            results[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
+            results[TIME] = stopwatch.Elapsed.ToString();
+            results[COUNT] = "1";
 
             return results;
         }
