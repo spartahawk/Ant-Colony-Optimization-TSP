@@ -601,19 +601,39 @@ namespace TSP
 
             // TODO pass a random number as the second parameter!
             Ant ant = new Ant(GetCosts(), 0);
-            int[] route = ant.FindRoute();
-
-            ArrayList cities = new ArrayList();
-            foreach (int city in route)
+            int count = 0;
+            while (stopwatch.ElapsedMilliseconds < 10000)
             {
-                cities.Add(Cities[city]);
-            }
-            bssf = new TSPSolution(new ArrayList(cities));
+                int[] route = ant.FindRoute();
 
+                ArrayList cities = new ArrayList();
+                foreach (int city in route)
+                {
+                    cities.Add(Cities[city]);
+                }
+                TSPSolution sol = new TSPSolution(cities);
+                if (bssf == null || sol.costOfRoute() < bssf.costOfRoute())
+                {
+                    bssf = sol;
+                    count++;
+                }
+
+                double[,] pheromones = Ant.GetPheromonesForPath(route, GetCosts());
+
+                double[,] existingPheromones = ant.Pheromones;
+                for(int i = 0; i < route.Length; i++)
+                {
+                    for(int j = 0; j < route.Length; j++)
+                    {
+                        existingPheromones[i, j] *= .8;
+                        existingPheromones[i, j] += pheromones[i,j];
+                    }
+                }
+
+                ant.Pheromones = existingPheromones;
+            }
 
             string[] results = new string[3];
-
-            double[,] costs = GetCosts();
 
             results[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
             results[TIME] = stopwatch.Elapsed.ToString();
