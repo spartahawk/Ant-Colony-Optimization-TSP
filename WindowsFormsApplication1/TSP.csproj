@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Ant.cs" />
     <Compile Include="AbstractPriorityQueue.cs" />
     <Compile Include="BBNode.cs" />
     <Compile Include="BBPriority.cs" />

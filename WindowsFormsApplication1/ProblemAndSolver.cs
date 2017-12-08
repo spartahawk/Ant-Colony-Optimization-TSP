@@ -596,9 +596,11 @@ namespace TSP
 
         public string[] fancySolveProblem()
         {
-            string[] results = new string[3];
 
-            // TODO: Add your implementation for your advanced solver here.
+            Ant ant = new Ant(GetCosts(), 0);
+            ant.FindRoute();
+
+            string[] results = new string[3];
 
             results[COST] = "not implemented";    // load results into array here, replacing these dummy values
             results[TIME] = "-1";
