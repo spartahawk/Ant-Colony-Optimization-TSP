@@ -600,16 +600,36 @@ namespace TSP
             stopwatch.Start();
 
             double[,] COSTS = GetCosts();
-            
-            // For now, put ones in here to start.  Maybe good to do it based on the greedy solution?
+
+            const double INITIAL_GREEDY = 1.00;
+            const double INITIAL_OTHERS = 0.75;
+
+            // Put initial pheromone numbers
             double[,] existingPheromones = new double[Cities.Length, Cities.Length];
             for(int i = 0; i < Cities.Length; i++)
             {
                 for (int j = 0; j < Cities.Length; j++)
                 {
-                    existingPheromones[i, j] = 1;
+                    existingPheromones[i, j] = INITIAL_OTHERS;
                 }
             }
+
+            // Now fill in routes along greedy solution with higher pheromones
+            greedySolveProblem();
+            Dictionary<City, int> cityMap = new Dictionary<City, int>(_size);
+            for(int i = 0; i < _size; i++)
+            {
+                cityMap.Add(Cities[i], i);
+            }
+
+            for(int i = 0; i < _size - 1; i++)
+            {
+                int from = cityMap[bssf.Route[i] as City];
+                int to = cityMap[bssf.Route[i+1] as City];
+                existingPheromones[from, to] = INITIAL_GREEDY;
+            }
+            existingPheromones[cityMap[bssf.Route[_size - 1] as City], cityMap[bssf.Route[0] as City]] = INITIAL_GREEDY;
+
 
             Random rnd = new Random();
             ArrayList ants = new ArrayList();
