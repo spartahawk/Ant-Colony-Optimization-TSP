@@ -614,8 +614,7 @@ namespace TSP
             Random rnd = new Random();
             ArrayList ants = new ArrayList();
 
-            // Should this number be a certain optimized amount? A fraction or mutliple of Cities.Length?
-            int NUMBER_OF_ANTS = Cities.Length;
+            int NUMBER_OF_ANTS = Cities.Length / 2;
             for (int i = 0; i < NUMBER_OF_ANTS; i++)
             {
                 // arbitrarily using the number of cities/ants as the random seed range.
