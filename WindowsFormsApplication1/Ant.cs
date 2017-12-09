@@ -57,23 +57,6 @@ namespace TSP
             RouteCost += Costs[AntRoute[AntRoute.Length - 1], AntRoute[0]];
         }
 
-        // This is being replaced by DepositPheromones()
-        //public static double[,] GetPheromonesForPath()
-        //{
-            //// Pheromone added to each segment = 1/(tour cost)
-            //double pheromoneStrength = 1 / RouteCost;
-            //double[,] result = new double[AntRoute.Length, AntRoute.Length];
-
-            // Make a matrix with pheromone added to each edge that was used.
-            //for(int i = 0; i < AntRoute.Length - 1; i++)
-            //{
-                //result[AntRoute[i], AntRoute[i + 1]] = pheromoneStrength;
-            //}
-            //result[AntRoute[AntRoute.Length - 1], AntRoute[0]] = pheromoneStrength;
-
-            //return result;
-        //}
-
         public void DepositPheromones(ref double[,] existingPheromones)
         {
             double pheromoneStrength = 1 / RouteCost;
