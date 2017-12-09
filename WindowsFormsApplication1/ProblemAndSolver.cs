@@ -646,7 +646,7 @@ namespace TSP
                 }
 
                 // decay each edge's pheramones that existed before this round
-                double DECAY_RATE = .8;
+                double DECAY_RATE = .9;
                 for(int i = 0; i < Cities.Length; i++)
                 {
                     for(int j = 0; j < Cities.Length; j++)
