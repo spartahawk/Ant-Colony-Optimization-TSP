@@ -600,8 +600,16 @@ namespace TSP
             stopwatch.Start();
 
             double[,] COSTS = GetCosts();
-            // this should zero every element to start
+            
+            // For now, put ones in here to start.  Maybe good to do it based on the greedy solution?
             double[,] existingPheromones = new double[Cities.Length, Cities.Length];
+            for(int i = 0; i < Cities.Length; i++)
+            {
+                for (int j = 0; j < Cities.Length; j++)
+                {
+                    existingPheromones[i, j] = 1;
+                }
+            }
 
             Random rnd = new Random();
             ArrayList ants = new ArrayList();
