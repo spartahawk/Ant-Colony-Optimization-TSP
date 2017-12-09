@@ -59,7 +59,7 @@ namespace TSP
 
         public void DepositPheromones(ref double[,] existingPheromones)
         {
-            double pheromoneStrength = 1 / RouteCost;
+            double pheromoneStrength = 100 / RouteCost;
             for (int i = 0; i < AntRoute.Length - 1; i++)
             {
                 existingPheromones[AntRoute[i], AntRoute[i + 1]] += pheromoneStrength;
