@@ -669,7 +669,7 @@ namespace TSP
 
             results[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
             results[TIME] = stopwatch.Elapsed.ToString();
-            results[COUNT] = "1";
+            results[COUNT] = count.ToString();
 
             return results;
         }
