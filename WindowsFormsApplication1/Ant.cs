@@ -6,18 +6,17 @@ namespace TSP
     public class Ant
     {
         public double [,] Costs { get; }
-        public double [,] Pheromones { get; set; }
+        public int [] AntRoute { get; set; }
+        public double RouteCost { get; set; }
 
-        public Ant(double[,] costs, int randomSeed)
+        public Ant(ref double[,] COSTS, int randomSeed)
         {
-            Costs = costs;
-            Pheromones = new double[costs.GetLength(0), costs.GetLength(0)];
+            Costs = COSTS;
             random = new Random(randomSeed);
         }
 
-
         private Random random;
-        public int[] FindRoute() {
+        public void FindRoute(ref double[,] existingPheromones) {
             int[] path = new int[Costs.GetLength(0)];
             HashSet<int> visited = new HashSet<int>();
 
@@ -26,44 +25,64 @@ namespace TSP
             visited.Add(path[0]);
 
             // Is a path possible?
-            bool success = FindRoute(0, ref path, visited);
+            bool success = FindRoute(0, ref path, visited, ref existingPheromones);
 
             if (success)
             {
-                // If so, return that path.
-                return path;
+                // If so, store that path.
+                AntRoute = path;
+                // Find and store the route cost
+                StoreRouteCost();
             }
             else
             {
-                return null;
+                Console.WriteLine("Setting Route to null. Edit this output to debug.");
+                AntRoute = null;
             }
         }
 
-        public static double[,] GetPheromonesForPath(int[] path, double[,] costs)
+        public void StoreRouteCost()
         {
             // Figure out the cost for the tour
-            double cost = 0;
-            for (int i = 0; i < path.Length - 1; i++)
+            // Since we're computing this, we might as well save it
+            // so as to not need to compute it again later.
+            RouteCost = 0;
+            for (int i = 0; i < AntRoute.Length - 1; i++)
             {
-                cost += costs[path[i], path[i + 1]];
+                RouteCost += Costs[AntRoute[i], AntRoute[i + 1]];
             }
-            cost += costs[path[path.Length - 1], path[0]];
-
-            // Pheromone added to each segment = 1/(tour cost)
-            double pheromone = 1 / cost;
-            double[,] ret = new double[path.Length, path.Length];
-
-            // Make a matrix with pheromone added to each edge that was used.
-            for(int i = 0; i < path.Length - 1; i++)
-            {
-                ret[path[i], path[i + 1]] = pheromone;
-            }
-            ret[path[path.Length - 1], path[0]] = pheromone;
-
-            return ret;
+            RouteCost += Costs[AntRoute[AntRoute.Length - 1], AntRoute[0]];
         }
 
-        private bool FindRoute(int index, ref int[] path, HashSet<int> visited)
+        // This is being replaced by DepositPheromones()
+        //public static double[,] GetPheromonesForPath()
+        //{
+            //// Pheromone added to each segment = 1/(tour cost)
+            //double pheromoneStrength = 1 / RouteCost;
+            //double[,] result = new double[AntRoute.Length, AntRoute.Length];
+
+            // Make a matrix with pheromone added to each edge that was used.
+            //for(int i = 0; i < AntRoute.Length - 1; i++)
+            //{
+                //result[AntRoute[i], AntRoute[i + 1]] = pheromoneStrength;
+            //}
+            //result[AntRoute[AntRoute.Length - 1], AntRoute[0]] = pheromoneStrength;
+
+            //return result;
+        //}
+
+        public void DepositPheromones(ref double[,] existingPheromones)
+        {
+            double pheromoneStrength = 1 / RouteCost;
+            for (int i = 0; i < AntRoute.Length - 1; i++)
+            {
+                existingPheromones[AntRoute[i], AntRoute[i + 1]] += pheromoneStrength;
+            }
+            // deposit pheramone on the edge from the last city to the first city too
+            existingPheromones[AntRoute[AntRoute.Length - 1], AntRoute[0]] += pheromoneStrength;
+        }
+
+        private bool FindRoute(int index, ref int[] path, HashSet<int> visited, ref double[,] existingPheromones)
         {
             // If it's gone through every city, make sure it can get back to the start.
             // If so, this is a valid cycle.
@@ -85,7 +104,7 @@ namespace TSP
                 {
                     if(wontWork.Contains(j)) { continue; }
 
-                    double desirability = GetPathDesirability(path[index], j, visited);
+                    double desirability = GetEdgeDesirability(path[index], j, visited, ref existingPheromones);
 
                     // This means that this city is infinitely desirable. This can happen if two
                     // cities are on top of each other.
@@ -121,7 +140,7 @@ namespace TSP
                     {
                         if (!wontWork.Contains(next))
                         {
-                            desirabilitySum += GetPathDesirability(path[index], next, visited);
+                            desirabilitySum += GetEdgeDesirability(path[index], next, visited, ref existingPheromones);
                             if (desirabilitySum > choice)
                             {
                                 break;
@@ -137,7 +156,7 @@ namespace TSP
                 // it to the list of cities that won't work.
                 path[index+1] = next;
                 visited.Add(next);
-                if (!FindRoute(index+1, ref path, visited))
+                if (!FindRoute(index+1, ref path, visited, ref existingPheromones))
                 {
                     visited.Remove(next);
                     wontWork.Add(next);
@@ -150,13 +169,14 @@ namespace TSP
             return false;
         }
 
-        // Get the desirability of a certain path.  Right now, only takes into account
-        // cost, but eventually will take into account pheromones.
-        private double GetPathDesirability(int from, int to, HashSet<int> visited) {
+        // Get the desirability of a certain edge. Based on an inverse relationship with cost,
+        // and a positive relationship with existingPheramones, normalized to 1.
+        private double GetEdgeDesirability(int from, int to, HashSet<int> visited, ref double[,] existingPheromones)
+        {
             if(visited.Contains(to)) { return 0; }
             if(from == to) { return 0; }
 
-            return 1 / Costs[from, to];
+            return 1 / ( Costs[from, to] / existingPheromones[from, to] );
         }
     }
 }

@@ -599,38 +599,63 @@ namespace TSP
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            // TODO pass a random number as the second parameter!
-            Ant ant = new Ant(GetCosts(), 0);
-            int count = 0;
-            while (stopwatch.ElapsedMilliseconds < 10000)
+            double[,] COSTS = GetCosts();
+            // this should zero every element to start
+            double[,] existingPheromones = new double[Cities.Length, Cities.Length];
+
+            Random rnd = new Random();
+            ArrayList ants = new ArrayList();
+
+            // Should this number be a certain optimized amount? A fraction or mutliple of Cities.Length?
+            int NUMBER_OF_ANTS = Cities.Length;
+            for (int i = 0; i < NUMBER_OF_ANTS; i++)
             {
-                int[] route = ant.FindRoute();
+                // arbitrarily using the number of cities/ants as the random seed range.
+                ants.Add(new Ant(ref COSTS, rnd.Next(1, NUMBER_OF_ANTS)));
+            }
 
-                ArrayList cities = new ArrayList();
-                foreach (int city in route)
-                {
-                    cities.Add(Cities[city]);
-                }
-                TSPSolution sol = new TSPSolution(cities);
-                if (bssf == null || sol.costOfRoute() < bssf.costOfRoute())
-                {
-                    bssf = sol;
-                    count++;
-                }
+            int count = 0;
 
-                double[,] pheromones = Ant.GetPheromonesForPath(route, GetCosts());
-
-                double[,] existingPheromones = ant.Pheromones;
-                for(int i = 0; i < route.Length; i++)
+            // We're counting in minutes now
+            while (stopwatch.Elapsed < TimeSpan.FromMinutes(time_limit / (1000 * 60)))
+            {
+                foreach (Ant ant in ants)
                 {
-                    for(int j = 0; j < route.Length; j++)
+                    // stores the route as property ant.Route
+                    ant.FindRoute(ref existingPheromones);
+
+                    if (bssf == null || ant.RouteCost < bssf.costOfRoute())
                     {
-                        existingPheromones[i, j] *= .8;
-                        existingPheromones[i, j] += pheromones[i,j];
+                        // keep in mind that 
+                        ArrayList cities = new ArrayList();
+                        for (int i = 0; i < ant.AntRoute.Length; i++)
+                        {
+                            cities.Add(Cities[i]);
+                        }
+
+                        bssf = new TSPSolution(cities);
+                        count++;
                     }
                 }
 
-                ant.Pheromones = existingPheromones;
+                // decay each edge's pheramones that existed before this round
+                double DECAY_RATE = .8;
+                for(int i = 0; i < Cities.Length; i++)
+                {
+                    for(int j = 0; j < Cities.Length; j++)
+                    {
+                        existingPheromones[i, j] *= DECAY_RATE;
+                    }
+                }
+
+                // Now that the round is over (and all ants were blind to pheramones deposited this round),
+                // and pheromones from prior rounds has decayed, we can add the fresh pheramone so that it
+                // is visible next round all at once.
+                foreach (Ant ant in ants)
+                {
+                    ant.DepositPheromones(ref existingPheromones);
+                }
+                
             }
 
             string[] results = new string[3];
