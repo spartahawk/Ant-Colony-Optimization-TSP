@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
+using System.IO;
 
 namespace TSP
 {
@@ -596,98 +597,159 @@ namespace TSP
 
         public string[] fancySolveProblem()
         {
+            double[] decayTestValues = { .9, .7, .5, .3, .1 };
+            double[] initialGreedyVals = { 1.00, 2.00, 5.00 };
+            double[] initialOthersVals = { 1.00, 2.00, 5.00 };
+            int[] numAntsDivideVals = { 1, 2, 4 };
+
+            double DECAY_RATE;
+            double INITIAL_GREEDY;
+            double INITIAL_OTHERS;
+            int NUM_ANTS_DIVIDING_FACTOR;
+
+            StringBuilder csv = new StringBuilder();
+
             Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
 
-            double[,] COSTS = GetCosts();
+            String titleLine = string.Format("{0},{1},{2},{3},{4}", "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_DIVIDING_FACTOR", "COST");
+            csv.AppendLine(titleLine);
 
-            const double INITIAL_GREEDY = 1.00;
-            const double INITIAL_OTHERS = 1.00;
+            String newLine = "";
+            double bestLength = double.PositiveInfinity;
+            
 
-            // Put initial pheromone numbers
-            double[,] existingPheromones = new double[Cities.Length, Cities.Length];
-            for(int i = 0; i < Cities.Length; i++)
+            for (int decay = 0; decay < decayTestValues.Length; decay++)
             {
-                for (int j = 0; j < Cities.Length; j++)
+                DECAY_RATE = decayTestValues[decay];
+                for (int initGreedy = 0; initGreedy < initialGreedyVals.Length; initGreedy++)
                 {
-                    existingPheromones[i, j] = INITIAL_OTHERS;
-                }
-            }
-
-            // Now fill in routes along greedy solution with higher pheromones
-            greedySolveProblem();
-            Dictionary<City, int> cityMap = new Dictionary<City, int>(_size);
-            for(int i = 0; i < _size; i++)
-            {
-                cityMap.Add(Cities[i], i);
-            }
-
-            for(int i = 0; i < _size - 1; i++)
-            {
-                int from = cityMap[bssf.Route[i] as City];
-                int to = cityMap[bssf.Route[i+1] as City];
-                existingPheromones[from, to] = INITIAL_GREEDY;
-            }
-            existingPheromones[cityMap[bssf.Route[_size - 1] as City], cityMap[bssf.Route[0] as City]] = INITIAL_GREEDY;
-
-
-            Random rnd = new Random();
-            ArrayList ants = new ArrayList();
-
-            int NUMBER_OF_ANTS = Cities.Length / 2;
-            for (int i = 0; i < NUMBER_OF_ANTS; i++)
-            {
-                // arbitrarily using the number of cities/ants as the random seed range.
-                ants.Add(new Ant(ref COSTS, rnd.Next()));
-            }
-
-            int count = 0;
-
-            // We're counting in minutes now
-            while (stopwatch.Elapsed.TotalMilliseconds < time_limit)
-            {
-                foreach (Ant ant in ants)
-                {
-                    // stores the route as property ant.Route
-                    ant.FindRoute(ref existingPheromones);
-
-                    if (bssf == null || ant.RouteCost < bssf.costOfRoute())
+                    INITIAL_GREEDY = initialGreedyVals[initGreedy];
+                    for(int initOther = 0; initOther < initialOthersVals.Length; initOther++)
                     {
-                        ArrayList cities = new ArrayList();
-                        for (int i = 0; i < ant.AntRoute.Length; i++)
+                        INITIAL_OTHERS = initialOthersVals[initOther];
+                        for(int numAnts = 0; numAnts < numAntsDivideVals.Length; numAnts++)
                         {
-                            cities.Add(Cities[ant.AntRoute[i]]);
+                            NUM_ANTS_DIVIDING_FACTOR = numAntsDivideVals[numAnts];
+
+                            stopwatch.Start();
+
+                            double[,] COSTS = GetCosts();
+
+                            //const double INITIAL_GREEDY = 1.00;
+                            //const double INITIAL_OTHERS = 1.00;
+
+                            // Put initial pheromone numbers
+                            double[,] existingPheromones = new double[Cities.Length, Cities.Length];
+                            for (int i = 0; i < Cities.Length; i++)
+                            {
+                                for (int j = 0; j < Cities.Length; j++)
+                                {
+                                    existingPheromones[i, j] = INITIAL_OTHERS;
+                                }
+                            }
+
+                            // Now fill in routes along greedy solution with higher pheromones
+                            greedySolveProblem();
+                            Dictionary<City, int> cityMap = new Dictionary<City, int>(_size);
+                            for (int i = 0; i < _size; i++)
+                            {
+                                cityMap.Add(Cities[i], i);
+                            }
+
+                            for (int i = 0; i < _size - 1; i++)
+                            {
+                                int from = cityMap[bssf.Route[i] as City];
+                                int to = cityMap[bssf.Route[i + 1] as City];
+                                existingPheromones[from, to] = INITIAL_GREEDY;
+                            }
+                            existingPheromones[cityMap[bssf.Route[_size - 1] as City], cityMap[bssf.Route[0] as City]] = INITIAL_GREEDY;
+
+
+                            Random rnd = new Random();
+                            ArrayList ants = new ArrayList();
+
+                            //int NUMBER_OF_ANTS = Cities.Length / 2;
+                            int NUMBER_OF_ANTS = Cities.Length / NUM_ANTS_DIVIDING_FACTOR;
+                            for (int i = 0; i < NUMBER_OF_ANTS; i++)
+                            {
+                                // arbitrarily using the number of cities/ants as the random seed range.
+                                ants.Add(new Ant(ref COSTS, rnd.Next()));
+                            }
+
+                            int count = 0;
+
+                            // We're counting in minutes now
+                            while (stopwatch.Elapsed.TotalMilliseconds < time_limit)
+                            {
+                                foreach (Ant ant in ants)
+                                {
+                                    // stores the route as property ant.Route
+                                    ant.FindRoute(ref existingPheromones);
+
+                                    if (bssf == null || ant.RouteCost < bssf.costOfRoute())
+                                    {
+                                        ArrayList cities = new ArrayList();
+                                        for (int i = 0; i < ant.AntRoute.Length; i++)
+                                        {
+                                            cities.Add(Cities[ant.AntRoute[i]]);
+                                        }
+                                        bssf = new TSPSolution(cities);
+                                        count++;
+                                    }
+                                }
+
+                                // decay each edge's pheramones that existed before this round
+                                //double DECAY_RATE = .9;
+                                for (int i = 0; i < Cities.Length; i++)
+                                {
+                                    for (int j = 0; j < Cities.Length; j++)
+                                    {
+                                        existingPheromones[i, j] *= DECAY_RATE;
+                                    }
+                                }
+
+                                // Now that the round is over (and all ants were blind to pheramones deposited this round),
+                                // and pheromones from prior rounds has decayed, we can add the fresh pheramone so that it
+                                // is visible next round all at once.
+                                foreach (Ant ant in ants)
+                                {
+                                    ant.DepositPheromones(ref existingPheromones);
+                                }
+
+                            }
+
+                            stopwatch.Stop();
+
+                            string[] res = new string[3];
+
+                            res[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
+                            res[TIME] = stopwatch.Elapsed.ToString();
+                            res[COUNT] = count.ToString();
+
+                            // "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_DIVIDING_FACTOR", "COST"
+                            if(costOfBssf() < bestLength)
+                            {
+                                newLine = string.Format("{0},{1},{2},{3},{4}", DECAY_RATE, INITIAL_GREEDY, INITIAL_OTHERS, NUM_ANTS_DIVIDING_FACTOR, res[COST]);
+                                bestLength = costOfBssf();
+                            }
+                            
+                            //csv.AppendLine(newLine);
+
+                            stopwatch.Reset();
+
                         }
-                        bssf = new TSPSolution(cities);
-                        count++;
                     }
                 }
-
-                // decay each edge's pheramones that existed before this round
-                double DECAY_RATE = .9;
-                for(int i = 0; i < Cities.Length; i++)
-                {
-                    for(int j = 0; j < Cities.Length; j++)
-                    {
-                        existingPheromones[i, j] *= DECAY_RATE;
-                    }
-                }
-
-                // Now that the round is over (and all ants were blind to pheramones deposited this round),
-                // and pheromones from prior rounds has decayed, we can add the fresh pheramone so that it
-                // is visible next round all at once.
-                foreach (Ant ant in ants)
-                {
-                    ant.DepositPheromones(ref existingPheromones);
-                }
-                
             }
+            csv.AppendLine(newLine);
+            File.AppendAllText("C:\\Users\\Aaron\\Documents\\School\\CS\\CS312\\TSP\\results.csv", csv.ToString());
+
 
             string[] results = new string[3];
 
             results[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
             results[TIME] = stopwatch.Elapsed.ToString();
-            results[COUNT] = count.ToString();
+            results[COUNT] = "not implemented";//count.ToString();
 
             return results;
         }
