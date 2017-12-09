@@ -5,6 +5,9 @@ namespace TSP
 {
     public class Ant
     {
+        public const double PHEROMONE_WEIGHT = 1;
+        public const double DISTANCE_WEIGHT = 1;
+
         public double [,] Costs { get; }
         public int [] AntRoute { get; set; }
         public double RouteCost { get; set; }
@@ -176,7 +179,10 @@ namespace TSP
             if(visited.Contains(to)) { return 0; }
             if(from == to) { return 0; }
 
-            return 1 / ( Costs[from, to] / existingPheromones[from, to] );
+            double distanceDesirability = Math.Pow(1 / Costs[from, to], DISTANCE_WEIGHT);
+            double pheromoneDesirability = Math.Pow(existingPheromones[from, to], PHEROMONE_WEIGHT);
+
+            return distanceDesirability * pheromoneDesirability;
         }
     }
 }
