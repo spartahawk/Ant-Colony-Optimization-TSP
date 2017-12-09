@@ -624,7 +624,7 @@ namespace TSP
             int count = 0;
 
             // We're counting in minutes now
-            while (stopwatch.Elapsed < TimeSpan.FromMinutes(time_limit / (1000 * 60)))
+            while (stopwatch.Elapsed.TotalMilliseconds < time_limit)
             {
                 foreach (Ant ant in ants)
                 {
