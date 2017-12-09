@@ -633,13 +633,11 @@ namespace TSP
 
                     if (bssf == null || ant.RouteCost < bssf.costOfRoute())
                     {
-                        // keep in mind that 
                         ArrayList cities = new ArrayList();
                         for (int i = 0; i < ant.AntRoute.Length; i++)
                         {
-                            cities.Add(Cities[i]);
+                            cities.Add(Cities[ant.AntRoute[i]]);
                         }
-
                         bssf = new TSPSolution(cities);
                         count++;
                     }

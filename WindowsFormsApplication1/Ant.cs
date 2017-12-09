@@ -41,6 +41,7 @@ namespace TSP
             {
                 Console.WriteLine("Setting Route to null. Edit this output to debug.");
                 AntRoute = null;
+                RouteCost = Double.PositiveInfinity;
             }
         }
 
