@@ -602,7 +602,7 @@ namespace TSP
             double[,] COSTS = GetCosts();
 
             const double INITIAL_GREEDY = 1.00;
-            const double INITIAL_OTHERS = 0.75;
+            const double INITIAL_OTHERS = 1.00;
 
             // Put initial pheromone numbers
             double[,] existingPheromones = new double[Cities.Length, Cities.Length];
