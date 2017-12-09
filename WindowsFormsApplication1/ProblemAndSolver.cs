@@ -618,7 +618,7 @@ namespace TSP
             for (int i = 0; i < NUMBER_OF_ANTS; i++)
             {
                 // arbitrarily using the number of cities/ants as the random seed range.
-                ants.Add(new Ant(ref COSTS, rnd.Next(1, NUMBER_OF_ANTS)));
+                ants.Add(new Ant(ref COSTS, rnd.Next()));
             }
 
             int count = 0;
