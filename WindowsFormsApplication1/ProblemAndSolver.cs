@@ -613,7 +613,7 @@ namespace TSP
             Stopwatch stopwatch = new Stopwatch();
 
             String titleLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-                "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_MULTIPLIER", "COST", "TIME LIMIT", "BSSF Found at time);
+                "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_MULTIPLIER", "COST", "TIME LIMIT", "BSSF Found at time");
             csv.AppendLine(titleLine);
 
             String newLine = "";
