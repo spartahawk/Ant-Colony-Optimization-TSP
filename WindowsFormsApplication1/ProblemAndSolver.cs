@@ -597,35 +597,14 @@ namespace TSP
 
         public string[] fancySolveProblem()
         {
-            /*
-            int[] timeLimitValues = {5 * 60 * 1000};
-            double[] decayTestValues = { .6};
-            double[] initialGreedyVals = { 1.00}; // 1.00 makes greedy do nothing
-            double[] initialOthersVals = { 1.00 };
-            double[] numAntsMultiplyVals = { .5};*/
-
             double DECAY_RATE = .6;
-            //double INITIAL_GREEDY = 1.00;
             double INITIAL_OTHERS = 1.00;
             double NUM_ANTS_MULTIPLIER = .5;
 
-            //StringBuilder csv = new StringBuilder();
-
             Stopwatch stopwatch = new Stopwatch();
-
-            //String titleLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-            //    "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_MULTIPLIER", "COST", "TIME LIMIT", "BSSF Found at time");
-            //csv.AppendLine(titleLine);
-
-            //String newLine = "";
-            //double bestLength = double.PositiveInfinity;
-
             stopwatch.Start();
 
             double[,] COSTS = GetCosts();
-
-            //const double INITIAL_GREEDY = 1.00;
-            //const double INITIAL_OTHERS = 1.00;
 
             // Put initial pheromone numbers
             double[,] existingPheromones = new double[Cities.Length, Cities.Length];
@@ -637,43 +616,18 @@ namespace TSP
                 }
             }
 
-            // Now fill in routes along greedy solution with higher pheromones
-            //greedySolveProblem();
-            /*
-            Dictionary<City, int> cityMap = new Dictionary<City, int>(_size);
-            for (int i = 0; i < _size; i++)
-            {
-                cityMap.Add(Cities[i], i);
-            }
-
-            for (int i = 0; i < _size - 1; i++)
-            {
-                int from = cityMap[bssf.Route[i] as City];
-                int to = cityMap[bssf.Route[i + 1] as City];
-                existingPheromones[from, to] = INITIAL_GREEDY;
-            }
-            
-            existingPheromones[cityMap[bssf.Route[_size - 1] as City], cityMap[bssf.Route[0] as City]] = INITIAL_GREEDY;
-            */
-            // SET BSSF TO NULL
-            //bssf = null;
-
-
             Random rnd = new Random();
             ArrayList ants = new ArrayList();
 
-            //int NUMBER_OF_ANTS = Cities.Length / 2;
             int NUMBER_OF_ANTS = (int)(Cities.Length * NUM_ANTS_MULTIPLIER);
             for (int i = 0; i < NUMBER_OF_ANTS; i++)
             {
-                // arbitrarily using the number of cities/ants as the random seed range.
                 ants.Add(new Ant(ref COSTS, rnd.Next()));
             }
 
             int count = 0;
             string bssfTime = "";
 
-            // We're counting in minutes now
             while (stopwatch.Elapsed.TotalMilliseconds < time_limit)
             {
                 foreach (Ant ant in ants)
@@ -691,9 +645,7 @@ namespace TSP
                         bssf = new TSPSolution(cities);
 
                         // collect the time the bssf was found
-
                         bssfTime = stopwatch.Elapsed.ToString();
-
                         count++;
                     }
                 }
@@ -714,37 +666,11 @@ namespace TSP
                 {
                     ant.DepositPheromones(ref existingPheromones);
                 }
-
             }
 
             stopwatch.Stop();
 
-            //string[] res = new string[3];
-            /*
-            res[COST] = costOfBssf().ToString();
-
-            res[TIME] = stopwatch.Elapsed.ToString();
-            res[COUNT] = count.ToString();
-            */
-
-            // "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_MULTIPLIER", "COST, "TIME LIMIT"
-
-            //newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-            //DECAY_RATE, INITIAL_GREEDY, INITIAL_OTHERS, NUM_ANTS_MULTIPLIER,
-            //res[COST], time_limit, bssfTime);
-            //bestLength = costOfBssf();
-
-
-            //csv.AppendLine(newLine);
-
-            //stopwatch.Reset();
-            
-            //csv.AppendLine(newLine);
-
-            //File.AppendAllText("C:\\Users\\user\\Desktop\\TSPdougtests\\differentSeeds.csv", csv.ToString());
-
             string[] results = new string[3];
-
             results[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
             results[TIME] = bssfTime;
             results[COUNT] = count.ToString();
