@@ -718,6 +718,8 @@ namespace TSP
 
             }
 
+            Console.WriteLine(bssfTime);
+
             stopwatch.Stop();
 
             //string[] res = new string[3];
