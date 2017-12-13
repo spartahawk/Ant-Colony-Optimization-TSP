@@ -605,7 +605,7 @@ namespace TSP
             double[] numAntsMultiplyVals = { .5};*/
 
             double DECAY_RATE = .6;
-            double INITIAL_GREEDY = 1.00;
+            //double INITIAL_GREEDY = 1.00;
             double INITIAL_OTHERS = 1.00;
             double NUM_ANTS_MULTIPLIER = .5;
 
@@ -638,8 +638,8 @@ namespace TSP
             }
 
             // Now fill in routes along greedy solution with higher pheromones
-            greedySolveProblem();
-
+            //greedySolveProblem();
+            /*
             Dictionary<City, int> cityMap = new Dictionary<City, int>(_size);
             for (int i = 0; i < _size; i++)
             {
@@ -652,10 +652,11 @@ namespace TSP
                 int to = cityMap[bssf.Route[i + 1] as City];
                 existingPheromones[from, to] = INITIAL_GREEDY;
             }
+            
             existingPheromones[cityMap[bssf.Route[_size - 1] as City], cityMap[bssf.Route[0] as City]] = INITIAL_GREEDY;
-
+            */
             // SET BSSF TO NULL
-            bssf = null;
+            //bssf = null;
 
 
             Random rnd = new Random();
@@ -719,12 +720,13 @@ namespace TSP
 
             stopwatch.Stop();
 
-            string[] res = new string[3];
-
+            //string[] res = new string[3];
+            /*
             res[COST] = costOfBssf().ToString();
 
             res[TIME] = stopwatch.Elapsed.ToString();
             res[COUNT] = count.ToString();
+            */
 
             // "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_MULTIPLIER", "COST, "TIME LIMIT"
 
