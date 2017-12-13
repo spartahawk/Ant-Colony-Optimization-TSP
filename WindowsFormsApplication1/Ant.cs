@@ -41,7 +41,7 @@ namespace TSP
             {
                 Console.WriteLine("Setting Route to null. Edit this output to debug.");
                 AntRoute = null;
-                RouteCost = Double.PositiveInfinity;
+                RouteCost = Double.MaxValue;
             }
         }
 
@@ -137,7 +137,12 @@ namespace TSP
                 }
 
                 // Could't figure out which neighboring city to go to based on the random number.
-                if (next == path.Length) { throw new Exception("Something borked, and I'm not sure how..."); }
+                if (next == path.Length)
+                {
+                    //throw new Exception("Something borked, and I'm not sure how...");
+                    // we're going to discard this ant
+                    return false;
+                }
 
                 // Try finding a path through the chosen city.  If it works, then return that. Otherwise, add
                 // it to the list of cities that won't work.

@@ -635,7 +635,7 @@ namespace TSP
                     // stores the route as property ant.Route
                     ant.FindRoute(ref existingPheromones);
 
-                    if (bssf == null || ant.RouteCost < bssf.costOfRoute())
+                    if ((bssf == null && ant.RouteCost != double.MaxValue) || (ant.RouteCost < bssf.costOfRoute()) )
                     {
                         ArrayList cities = new ArrayList();
                         for (int i = 0; i < ant.AntRoute.Length; i++)
