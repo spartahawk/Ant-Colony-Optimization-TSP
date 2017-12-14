@@ -699,7 +699,6 @@ namespace TSP
                 }
 
                 // decay each edge's pheramones that existed before this round
-                //double DECAY_RATE = .9;
                 for (int i = 0; i < Cities.Length; i++)
                 {
                     for (int j = 0; j < Cities.Length; j++)
@@ -717,8 +716,6 @@ namespace TSP
                 }
 
             }
-
-            Console.WriteLine(bssfTime);
 
             stopwatch.Stop();
 
@@ -749,7 +746,7 @@ namespace TSP
             string[] results = new string[3];
 
             results[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
-            results[TIME] = stopwatch.Elapsed.ToString();
+            results[TIME] = bssfTime;
             results[COUNT] = count.ToString();
 
             return results;
