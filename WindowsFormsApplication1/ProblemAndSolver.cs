@@ -597,16 +597,16 @@ namespace TSP
 
         public string[] fancySolveProblem()
         {
-            int[] timeLimitValues = {60 * 1000, 5 * 60 * 1000, 10 * 60 * 1000};
-            double[] decayTestValues = { .9, .5};
-            double[] initialGreedyVals = { 1.00, 2.00}; // 1.00 makes greedy do nothing
+            int[] timeLimitValues = {5 * 60 * 1000};
+            double[] decayTestValues = { .6};
+            double[] initialGreedyVals = { 1.00}; // 1.00 makes greedy do nothing
             double[] initialOthersVals = { 1.00 };
-            int[] numAntsMultiplyVals = { 1, 2};
+            double[] numAntsMultiplyVals = { .5};
 
             double DECAY_RATE;
             double INITIAL_GREEDY;
             double INITIAL_OTHERS;
-            int NUM_ANTS_MULTIPLIER;
+            double NUM_ANTS_MULTIPLIER;
 
             StringBuilder csv = new StringBuilder();
 
@@ -620,7 +620,7 @@ namespace TSP
             double bestLength = double.PositiveInfinity;
             
             
-
+       
             for (int time = 0; time < timeLimitValues.Length; time++)
             {
                 time_limit = timeLimitValues[time];
@@ -681,7 +681,7 @@ namespace TSP
                                 ArrayList ants = new ArrayList();
 
                                 //int NUMBER_OF_ANTS = Cities.Length / 2;
-                                int NUMBER_OF_ANTS = Cities.Length * NUM_ANTS_MULTIPLIER;
+                                int NUMBER_OF_ANTS = (int) (Cities.Length * NUM_ANTS_MULTIPLIER);
                                 for (int i = 0; i < NUMBER_OF_ANTS; i++)
                                 {
                                     // arbitrarily using the number of cities/ants as the random seed range.
@@ -689,7 +689,7 @@ namespace TSP
                                 }
 
                                 int count = 0;
-                                int bssfTime = 0;
+                                string bssfTime = "";
 
                                 // We're counting in minutes now
                                 while (stopwatch.Elapsed.TotalMilliseconds < time_limit)
@@ -739,18 +739,17 @@ namespace TSP
                                 stopwatch.Stop();
 
                                 string[] res = new string[3];
-                                if (costOfBssf() != null)
-                                {
-                                    res[COST] = costOfBssf().ToString();
-                                }
-                                else res[COST] = "null";    // load results into array here, replacing these dummy values
+                
+                                res[COST] = costOfBssf().ToString();
+                                
                                 res[TIME] = stopwatch.Elapsed.ToString();
                                 res[COUNT] = count.ToString();
 
                                 // "DECAY_RATE", "INITIAL_GREEDY", "INITIAL_OTHERS", "NUM_ANTS_MULTIPLIER", "COST, "TIME LIMIT"
 
                                 newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-                                    DECAY_RATE, INITIAL_GREEDY, INITIAL_OTHERS, NUM_ANTS_MULTIPLIER, res[COST], time_limit, bssfTime);
+                                    DECAY_RATE, INITIAL_GREEDY, INITIAL_OTHERS, NUM_ANTS_MULTIPLIER,
+                                    res[COST], time_limit, bssfTime);
                                 bestLength = costOfBssf();
 
                             
@@ -769,7 +768,7 @@ namespace TSP
             
             csv.AppendLine(newLine);
 
-            File.AppendAllText("C:\\Users\\user\\Desktop\\TSPdougtests\\resultsLongerTime.csv", csv.ToString());
+            File.AppendAllText("C:\\Users\\user\\Desktop\\TSPdougtests\\differentSeeds.csv", csv.ToString());
 
             string[] results = new string[3];
 
