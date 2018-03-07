@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
+using System.IO;
 
 namespace TSP
 {
@@ -596,17 +597,86 @@ namespace TSP
 
         public string[] fancySolveProblem()
         {
+            double DECAY_RATE = .6;
+            double INITIAL_OTHERS = 1.00;
+            double NUM_ANTS_MULTIPLIER = .5;
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            double[,] COSTS = GetCosts();
+
+            // Put initial pheromone numbers
+            double[,] existingPheromones = new double[Cities.Length, Cities.Length];
+            for (int i = 0; i < Cities.Length; i++)
+            {
+                for (int j = 0; j < Cities.Length; j++)
+                {
+                    existingPheromones[i, j] = INITIAL_OTHERS;
+                }
+            }
+
+            Random rnd = new Random();
+            ArrayList ants = new ArrayList();
+
+            int NUMBER_OF_ANTS = (int)(Cities.Length * NUM_ANTS_MULTIPLIER);
+            for (int i = 0; i < NUMBER_OF_ANTS; i++)
+            {
+                ants.Add(new Ant(ref COSTS, rnd.Next()));
+            }
+
+            int count = 0;
+            string bssfTime = "";
+
+            while (stopwatch.Elapsed.TotalMilliseconds < time_limit)
+            {
+                foreach (Ant ant in ants)
+                {
+                    // stores the route as property ant.Route
+                    ant.FindRoute(ref existingPheromones);
+
+                    if ((bssf == null && ant.RouteCost != double.MaxValue) || (ant.RouteCost < bssf.costOfRoute()) )
+                    {
+                        ArrayList cities = new ArrayList();
+                        for (int i = 0; i < ant.AntRoute.Length; i++)
+                        {
+                            cities.Add(Cities[ant.AntRoute[i]]);
+                        }
+                        bssf = new TSPSolution(cities);
+
+                        // collect the time the bssf was found
+                        bssfTime = stopwatch.Elapsed.ToString();
+                        count++;
+                    }
+                }
+
+                // decay each edge's pheramones that existed before this round
+                for (int i = 0; i < Cities.Length; i++)
+                {
+                    for (int j = 0; j < Cities.Length; j++)
+                    {
+                        existingPheromones[i, j] *= DECAY_RATE;
+                    }
+                }
+
+                // Now that the round is over (and all ants were blind to pheramones deposited this round),
+                // and pheromones from prior rounds has decayed, we can add the fresh pheramone so that it
+                // is visible next round all at once.
+                foreach (Ant ant in ants)
+                {
+                    ant.DepositPheromones(ref existingPheromones);
+                }
+            }
+
+            stopwatch.Stop();
+
             string[] results = new string[3];
-
-            // TODO: Add your implementation for your advanced solver here.
-
-            results[COST] = "not implemented";    // load results into array here, replacing these dummy values
-            results[TIME] = "-1";
-            results[COUNT] = "-1";
+            results[COST] = costOfBssf().ToString();    // load results into array here, replacing these dummy values
+            results[TIME] = bssfTime;
+            results[COUNT] = count.ToString();
 
             return results;
         }
         #endregion
     }
-
 }
