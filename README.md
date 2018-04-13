@@ -3,7 +3,7 @@
 An ant colony optimization approach to approximate solutions to the TSP problem, using fine-tuned heuristic coefficient schemes found through
 extensive comparative permutation testing. Analysis against other approaches.
 
-[Full description and report](https://drive.google.com/open?id=1B2vf5Z9xWNi0WJMRDRxJHnrVo8k3IB6M)
+[Full description and report (screenshots of the gui near the end)](https://drive.google.com/open?id=1B2vf5Z9xWNi0WJMRDRxJHnrVo8k3IB6M)
 
 # The more interesting code:
 
