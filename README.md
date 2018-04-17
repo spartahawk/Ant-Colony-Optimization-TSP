@@ -9,4 +9,4 @@ extensive comparative permutation testing. Analysis against other approaches.
 
 [The ant-colony optimization algorithm itself](https://github.com/spartahawk/Ant-Colony-Optimization-TSP/blob/50b4194f2ce96dfcd0f6df0570e0f42ec1f6370c/WindowsFormsApplication1/ProblemAndSolver.cs#L597)
 
-[The Ant class that it uses](https://github.com/spartahawk/Ant-Colony-Optimization-TSP/blob/50b4194f2ce96dfcd0f6df0570e0f42ec1f6370c/WindowsFormsApplication1/ProblemAndSolver.cs#L597)
+[The Ant class that it uses](https://github.com/spartahawk/Ant-Colony-Optimization-TSP/blob/master/WindowsFormsApplication1/Ant.cs)
